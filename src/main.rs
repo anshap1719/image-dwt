@@ -4,7 +4,7 @@ use ndarray::Array2;
 use image_dwt::transform::a_trous_transform;
 
 fn main() {
-    let image = image::open("./sample.jpg").unwrap();
+    let image = image::open("./5bef9d1cc91f5635e4274f8df62f6906.jpg").unwrap();
     a_trous_transform(&image, 5);
 
     let image = image::open("./residue.jpg").unwrap();
@@ -51,11 +51,7 @@ fn main() {
 
     let mut result_img: ImageBuffer<Rgb<f32>, Vec<f32>> = ImageBuffer::new(width, height);
 
-    println!("{min_pixel}, {max_pixel}");
-
     let rescale_ratio = max_pixel - min_pixel;
-
-    println!("{rescale_ratio}");
 
     for (x, y, pixel) in result_img.enumerate_pixels_mut() {
         let val = buffer[(y as usize, x as usize)];
