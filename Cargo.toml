@@ -10,6 +10,6 @@ name = "image_dwt"
 path = "src/main.rs"
 
 [dependencies]
-image = "0.25.0"
+image = { version = "0.25.0", features = ["tiff"] }
 ndarray = { version = "0.15.6", features = ["rayon"] }
 tiff = "0.9.1"

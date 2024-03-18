@@ -1,8 +1,5 @@
-use std::fs::File;
-
-use image::{DynamicImage, ImageBuffer, Luma};
+use image::{DynamicImage, ImageBuffer, Rgb};
 use ndarray::Array2;
-use tiff::encoder::{colortype, TiffEncoder};
 
 use crate::kernels::{Kernel, LinearInterpolationKernel};
 
@@ -123,7 +120,7 @@ pub fn a_trous_transform(image: &DynamicImage, levels: usize) {
             })
             .unwrap();
 
-        let mut result_img: ImageBuffer<Luma<f32>, Vec<f32>> =
+        let mut result_img: ImageBuffer<Rgb<f32>, Vec<f32>> =
             ImageBuffer::new(width as u32, height as u32);
 
         println!("{min_pixel}, {max_pixel}");
@@ -134,36 +131,59 @@ pub fn a_trous_transform(image: &DynamicImage, levels: usize) {
 
         for (x, y, pixel) in result_img.enumerate_pixels_mut() {
             let val = final_data[(y as usize, x as usize)];
-            *pixel = Luma([(val - min_pixel) / rescale_ratio]);
+            let scaled_value = (val - min_pixel) / rescale_ratio;
+            *pixel = Rgb([scaled_value, scaled_value, scaled_value]);
         }
 
-        write_tiff(result_img, &format!("level{pixel_scale}"));
+        DynamicImage::ImageRgb32F(result_img)
+            .to_rgb8()
+            .save(&format!("level{pixel_scale}.jpg"))
+            .unwrap();
 
         pixel_scale += 1;
 
         data = current_data;
     }
-}
 
-pub fn write_tiff(input_image: ImageBuffer<Luma<f32>, Vec<f32>>, name: &str) {
-    let output_file = File::create(format!("{name}.tif")).unwrap();
-    let mut encoder = TiffEncoder::new(&output_file).unwrap();
-
-    let mut image = encoder
-        .new_image::<colortype::Gray32Float>(input_image.width(), input_image.height())
+    let min_pixel = data
+        .iter()
+        .reduce(|current, previous| {
+            if current < previous {
+                current
+            } else {
+                previous
+            }
+        })
         .unwrap();
 
-    let buffer = input_image.as_raw();
+    let max_pixel = data
+        .iter()
+        .reduce(|current, previous| {
+            if current > previous {
+                current
+            } else {
+                previous
+            }
+        })
+        .unwrap();
 
-    image.rows_per_strip(4).unwrap();
+    let mut result_img: ImageBuffer<Rgb<f32>, Vec<f32>> =
+        ImageBuffer::new(width as u32, height as u32);
 
-    let mut idx = 0;
-    while image.next_strip_sample_count() > 0 {
-        let sample_count = image.next_strip_sample_count() as usize;
-        image.write_strip(&buffer[idx..idx + sample_count]).unwrap();
+    println!("{min_pixel}, {max_pixel}");
 
-        idx += sample_count;
+    let rescale_ratio = max_pixel - min_pixel;
+
+    println!("{rescale_ratio}");
+
+    for (x, y, pixel) in result_img.enumerate_pixels_mut() {
+        let val = data[(y as usize, x as usize)];
+        let scaled_value = (val - min_pixel) / rescale_ratio;
+        *pixel = Rgb([scaled_value, scaled_value, scaled_value]);
     }
 
-    image.finish().unwrap();
+    DynamicImage::ImageRgb32F(result_img)
+        .to_rgb8()
+        .save("residue.jpg")
+        .unwrap();
 }
