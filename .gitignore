@@ -1,3 +1,8 @@
 /target
 *.jpg
 *.jpeg
+*.tiff
+*.tif
+*.gif
+.DS_Store
+/**/.DS_Store
