@@ -1,13 +1,8 @@
-use std::ops::Index;
-
-pub trait Kernel
+pub trait Kernel<const SIZE: usize>
 where
-    Self: Copy,
-    <Self::Values as Index<usize>>::Output: Index<usize, Output = f32> + IntoIterator,
+    Self: Copy + Send + Sync,
 {
-    type Values: Index<usize> + IntoIterator;
-
-    fn values(&self) -> Self::Values;
+    fn values(&self) -> [[f32; SIZE]; SIZE];
 
     fn size(&self) -> usize;
 
@@ -23,10 +18,8 @@ where
 #[derive(Copy, Clone)]
 pub struct LinearInterpolationKernel;
 
-impl Kernel for LinearInterpolationKernel {
-    type Values = [[f32; 3]; 3];
-
-    fn values(&self) -> Self::Values {
+impl Kernel<3> for LinearInterpolationKernel {
+    fn values(&self) -> [[f32; 3]; 3] {
         [
             [1. / 16., 1. / 8., 1. / 16.],
             [1. / 8., 1. / 4., 1. / 8.],
@@ -42,10 +35,8 @@ impl Kernel for LinearInterpolationKernel {
 #[derive(Copy, Clone)]
 pub struct LowScaleKernel;
 
-impl Kernel for LowScaleKernel {
-    type Values = [[f32; 3]; 3];
-
-    fn values(&self) -> Self::Values {
+impl Kernel<3> for LowScaleKernel {
+    fn values(&self) -> [[f32; 3]; 3] {
         [
             [1. / 16., 1. / 8., 1. / 16.],
             [1. / 8., 10., 1. / 8.],
@@ -61,10 +52,8 @@ impl Kernel for LowScaleKernel {
 #[derive(Copy, Clone)]
 pub struct B3SplineKernel;
 
-impl Kernel for B3SplineKernel {
-    type Values = [[f32; 5]; 5];
-
-    fn values(&self) -> Self::Values {
+impl Kernel<5> for B3SplineKernel {
+    fn values(&self) -> [[f32; 5]; 5] {
         [
             [1. / 256., 1. / 64., 3. / 128., 1. / 64., 1. / 256.],
             [1. / 64., 1. / 16., 3. / 32., 1. / 16., 1. / 64.],
