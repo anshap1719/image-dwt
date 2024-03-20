@@ -3,18 +3,19 @@ use std::thread::spawn;
 use image::{DynamicImage, ImageBuffer, Rgb};
 use ndarray::Array2;
 
-use crate::extended_index::ExtendedIndex;
+use crate::aggregate::Aggregate;
+use crate::decompose::WaveletDecompose;
 use crate::kernels::{B3SplineKernel, Kernel, LinearInterpolationKernel, LowScaleKernel};
-use crate::layer::{WaveletLayer, WaveletLayerBuffer};
+use crate::layer::WaveletLayer;
 
-pub struct TransformData {
-    red: Array2<f32>,
-    green: Array2<f32>,
-    blue: Array2<f32>,
+pub struct ChannelWiseData {
+    pub(crate) red: Array2<f32>,
+    pub(crate) green: Array2<f32>,
+    pub(crate) blue: Array2<f32>,
 }
 
 pub struct ATrousTransform<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_SIZE> + 'static> {
-    input: TransformData,
+    input: ChannelWiseData,
     levels: usize,
     kernel: KernelType,
     current_level: usize,
@@ -42,7 +43,7 @@ impl<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_SIZE>>
             data_b[[y as usize, x as usize]] = b;
         }
 
-        let input = TransformData {
+        let input = ChannelWiseData {
             red: data_r,
             green: data_g,
             blue: data_b,
@@ -92,15 +93,15 @@ impl<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_SIZE>> Iterator
         }
 
         if pixel_scale == self.levels {
-            let min_r = get_min_value(&self.input.red);
-            let min_g = get_min_value(&self.input.green);
-            let min_b = get_min_value(&self.input.blue);
+            let min_r = self.input.red.min();
+            let min_g = self.input.green.min();
+            let min_b = self.input.blue.min();
 
             let min_pixel = min_r.min(min_g).min(min_b);
 
-            let max_r = get_max_value(&self.input.red);
-            let max_g = get_max_value(&self.input.green);
-            let max_b = get_max_value(&self.input.blue);
+            let max_r = self.input.red.max();
+            let max_g = self.input.green.max();
+            let max_b = self.input.blue.max();
 
             let max_pixel = max_r.max(max_g).max(max_b);
 
@@ -136,17 +137,17 @@ impl<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_SIZE>> Iterator
         let kernel = self.kernel;
 
         let handler_r = spawn(move || {
-            let final_r = decompose(&mut data_r, kernel, pixel_scale, width, height);
+            let final_r = data_r.wavelet_decompose(kernel, pixel_scale, width, height);
             (data_r, final_r)
         });
 
         let handler_g = spawn(move || {
-            let final_g = decompose(&mut data_g, kernel, pixel_scale, width, height);
+            let final_g = data_g.wavelet_decompose(kernel, pixel_scale, width, height);
             (data_g, final_g)
         });
 
         let handler_b = spawn(move || {
-            let final_b = decompose(&mut data_b, kernel, pixel_scale, width, height);
+            let final_b = data_b.wavelet_decompose(kernel, pixel_scale, width, height);
             (data_b, final_b)
         });
 
@@ -157,15 +158,15 @@ impl<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_SIZE>> Iterator
         let (data_b_copy, final_b) = handler_b.join().unwrap();
         self.input.blue = data_b_copy;
 
-        let min_r = get_min_value(&final_r.data);
-        let min_g = get_min_value(&final_g.data);
-        let min_b = get_min_value(&final_b.data);
+        let min_r = final_r.data.min();
+        let min_g = final_g.data.min();
+        let min_b = final_b.data.min();
 
         let min_pixel = min_r.min(min_g).min(min_b);
 
-        let max_r = get_max_value(&final_r.data);
-        let max_g = get_max_value(&final_g.data);
-        let max_b = get_max_value(&final_b.data);
+        let max_r = final_r.data.max();
+        let max_g = final_g.data.max();
+        let max_b = final_b.data.max();
 
         let max_pixel = max_r.max(max_g).max(max_b);
 
@@ -191,75 +192,4 @@ impl<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_SIZE>> Iterator
             image_buffer: result_img,
         })
     }
-}
-
-pub fn decompose<const KERNEL_SIZE: usize>(
-    data: &mut Array2<f32>,
-    kernel: impl Kernel<KERNEL_SIZE>,
-    pixel_scale: usize,
-    width: usize,
-    height: usize,
-) -> WaveletLayerBuffer {
-    let distance = 2_usize.pow(pixel_scale as u32);
-    let mut current_data = Array2::<f32>::zeros((height, width));
-
-    for x in 0..width {
-        for y in 0..height {
-            let mut pixels_sum = 0.0;
-
-            let abs_kernel_size = (kernel.size() / 2) as isize;
-            let kernel_values = kernel.values();
-
-            for kernel_index_x in -abs_kernel_size..=abs_kernel_size {
-                for kernel_index_y in -abs_kernel_size..=abs_kernel_size {
-                    let index = current_data.compute_extended_index(
-                        x,
-                        y,
-                        kernel_index_x * distance as isize,
-                        kernel_index_y * distance as isize,
-                    );
-                    let kernel_value = kernel_values[(kernel_index_x + abs_kernel_size) as usize]
-                        [(kernel_index_y + abs_kernel_size) as usize];
-
-                    pixels_sum += kernel_value * data[index];
-                }
-            }
-
-            current_data[[y, x]] = pixels_sum;
-        }
-    }
-
-    let final_data = data.clone() - &current_data;
-    *data = current_data;
-
-    WaveletLayerBuffer {
-        data: final_data,
-        pixel_scale,
-    }
-}
-
-fn get_min_value(data: &Array2<f32>) -> f32 {
-    *data
-        .iter()
-        .reduce(|current, previous| {
-            if current < previous {
-                current
-            } else {
-                previous
-            }
-        })
-        .unwrap()
-}
-
-fn get_max_value(data: &Array2<f32>) -> f32 {
-    *data
-        .iter()
-        .reduce(|current, previous| {
-            if current > previous {
-                current
-            } else {
-                previous
-            }
-        })
-        .unwrap()
 }
