@@ -2,6 +2,15 @@
 name = "image-dwt"
 version = "0.1.0"
 edition = "2021"
+authors = ["Anshul Sanghi <anshul@anshulsanghi.tech>"]
+description = "An implementation of the À Trous Discrete Wavelet Transform for images"
+homepage = "https://github.com/anshap1719/image-dwt"
+repository = "https://github.com/anshap1719/image-dwt"
+keywords = ["image", "wavelet", "multiscale", "analysis", "atrous"]
+categories = ["multimedia"]
+license = "Apache-2.0"
+readme = "./README.md"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

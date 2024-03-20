@@ -1,4 +1,4 @@
-pub mod aggregate;
+pub(crate) mod aggregate;
 pub mod decompose;
 pub(crate) mod extended_index;
 pub mod kernels;
