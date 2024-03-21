@@ -5,8 +5,8 @@ use image_dwt::recompose::ATrousRecompose;
 use image_dwt::transform::ATrousTransform;
 
 fn main() {
-    let image = image::open("./Dis.jpg").unwrap();
-    let transform = ATrousTransform::new(&image, 3, LinearInterpolationKernel);
+    let image = image::open("./5bef9d1cc91f5635e4274f8df62f6906.jpg").unwrap();
+    let transform = ATrousTransform::new(&image, 10, LinearInterpolationKernel);
 
     for layer in transform {
         let name = match layer.pixel_scale {
@@ -21,7 +21,7 @@ fn main() {
     }
 
     let recomposed = ATrousRecompose::new(&image::open("residue.jpg").unwrap())
-        .recompose((0..3).map(|layer| image::open(format!("level{layer}.jpg")).unwrap()));
+        .recompose((0..10).map(|layer| image::open(format!("level{layer}.jpg")).unwrap()));
 
     recomposed.to_rgb8().save("recombined.jpg").unwrap()
 }
