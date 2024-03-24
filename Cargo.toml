@@ -1,6 +1,6 @@
 [package]
 name = "image-dwt"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["Anshul Sanghi <anshul@anshulsanghi.tech>"]
 description = "An implementation of the À Trous Discrete Wavelet Transform for images"
