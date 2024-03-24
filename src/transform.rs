@@ -14,6 +14,28 @@ pub struct ChannelWiseData {
     pub(crate) blue: Array2<f32>,
 }
 
+#[derive(Copy, Clone)]
+pub struct Scale {
+    min: f32,
+    max: f32,
+    scaling_ratio: f32,
+}
+
+impl Scale {
+    pub fn new(min: f32, max: f32) -> Self {
+        Self {
+            min,
+            max,
+            scaling_ratio: max - min,
+        }
+    }
+
+    #[inline]
+    pub fn apply(&self, value: f32) -> f32 {
+        (value - self.min) / self.scaling_ratio
+    }
+}
+
 pub struct ATrousTransform<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_SIZE> + 'static> {
     input: ChannelWiseData,
     levels: usize,
@@ -21,6 +43,9 @@ pub struct ATrousTransform<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_S
     current_level: usize,
     width: usize,
     height: usize,
+    scale_r: Scale,
+    scale_g: Scale,
+    scale_b: Scale,
 }
 
 impl<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_SIZE>>
@@ -43,6 +68,10 @@ impl<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_SIZE>>
             data_b[[y as usize, x as usize]] = b;
         }
 
+        let scale_r = Scale::new(data_r.min(), data_r.max());
+        let scale_g = Scale::new(data_g.min(), data_g.max());
+        let scale_b = Scale::new(data_b.min(), data_b.max());
+
         let input = ChannelWiseData {
             red: data_r,
             green: data_g,
@@ -56,6 +85,9 @@ impl<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_SIZE>>
             levels,
             kernel,
             current_level: 0,
+            scale_r,
+            scale_g,
+            scale_b,
         }
     }
 

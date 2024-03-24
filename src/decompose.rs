@@ -1,6 +1,5 @@
 use ndarray::Array2;
 
-use crate::extended_index::ExtendedIndex;
 use crate::kernels::Kernel;
 use crate::layer::WaveletLayerBuffer;
 
@@ -34,11 +33,12 @@ impl WaveletDecompose for Array2<f32> {
 
                 for kernel_index_x in -abs_kernel_size..=abs_kernel_size {
                     for kernel_index_y in -abs_kernel_size..=abs_kernel_size {
-                        let index = current_data.compute_extended_index(
+                        let index = kernel.compute_extended_index(
                             x,
                             y,
                             kernel_index_x * distance as isize,
                             kernel_index_y * distance as isize,
+                            &current_data,
                         );
                         let kernel_value = kernel_values
                             [(kernel_index_x + abs_kernel_size) as usize]

@@ -1,3 +1,5 @@
+use ndarray::Array2;
+
 pub trait Kernel<const SIZE: usize>
 where
     Self: Copy + Send + Sync,
@@ -12,6 +14,38 @@ where
         }
 
         self.values()[index[0]][index[1]]
+    }
+
+    fn compute_extended_index(
+        &self,
+        x: usize,
+        y: usize,
+        x_distance: isize,
+        y_distance: isize,
+        data: &Array2<f32>,
+    ) -> [usize; 2] {
+        let kernel_size = self.size() as isize;
+        let kernel_padding = kernel_size / 2;
+        let (max_y, max_x) = data.dim();
+
+        let mut x = x as isize + x_distance;
+        let mut y = y as isize + y_distance;
+
+        if x < 0 {
+            x = -x;
+        } else if x > max_x as isize - kernel_padding {
+            let overshot_distance = x - max_x as isize + kernel_padding;
+            x = max_x as isize - overshot_distance;
+        }
+
+        if y < 0 {
+            y = -y;
+        } else if y > max_y as isize - kernel_padding {
+            let overshot_distance = y - max_y as isize + kernel_padding;
+            y = max_y as isize - overshot_distance;
+        }
+
+        [y as usize, x as usize]
     }
 }
 
