@@ -1,63 +1,86 @@
-use image::{DynamicImage, ImageBuffer, Rgb};
-use ndarray::Array2;
+use image::{DynamicImage, ImageBuffer, Luma, Rgb};
+use ndarray::Array3;
 
 use crate::aggregate::Aggregate;
-use crate::layer::WaveletLayer;
-use crate::transform::ChannelWiseData;
+use crate::layer::{WaveletLayer, WaveletLayerBuffer};
+
+#[derive(Copy, Clone)]
+pub enum OutputLayer {
+    Grayscale,
+    Rgb,
+}
+
+impl OutputLayer {
+    fn to_num_channels(self) -> usize {
+        match self {
+            OutputLayer::Grayscale => 1,
+            OutputLayer::Rgb => 3,
+        }
+    }
+}
 
 pub trait RecomposableWaveletLayers: Iterator<Item = WaveletLayer> {
-    fn recompose_into_image(self, width: usize, height: usize) -> DynamicImage
+    fn recompose_into_image(
+        self,
+        width: usize,
+        height: usize,
+        output_layer: OutputLayer,
+    ) -> DynamicImage
     where
         Self: Sized,
     {
-        let mut result = ChannelWiseData {
-            red: Array2::<f32>::zeros((height, width)),
-            green: Array2::<f32>::zeros((height, width)),
-            blue: Array2::<f32>::zeros((height, width)),
-        };
-
+        let mut result = Array3::<f32>::zeros((height, width, output_layer.to_num_channels()));
         for layer in self {
-            for (x, y, pixel) in layer.image_buffer.enumerate_pixels() {
-                let x = x as usize;
-                let y = y as usize;
-
-                let [red, green, blue] = pixel.0;
-                result.red[[y, x]] += red;
-                result.green[[y, x]] += green;
-                result.blue[[y, x]] += blue;
+            match layer.buffer {
+                WaveletLayerBuffer::Grayscale { data } => {
+                    result += &data;
+                }
+                WaveletLayerBuffer::Rgb { data } => {
+                    result += &data;
+                }
             }
         }
 
-        let min_r = result.red.min();
-        let min_g = result.green.min();
-        let min_b = result.blue.min();
+        let min_pixel = result.min();
+        let max_pixel = result.max();
 
-        let min_pixel = min_r.min(min_g).min(min_b);
+        match output_layer {
+            OutputLayer::Grayscale => {
+                let mut result_img: ImageBuffer<Luma<u16>, Vec<u16>> =
+                    ImageBuffer::new(width as u32, height as u32);
 
-        let max_r = result.red.max();
-        let max_g = result.green.max();
-        let max_b = result.blue.max();
+                let rescale_ratio = max_pixel - min_pixel;
 
-        let max_pixel = max_r.max(max_g).max(max_b);
+                for (x, y, pixel) in result_img.enumerate_pixels_mut() {
+                    let intensity = result[(y as usize, x as usize, 0)];
 
-        let mut result_img: ImageBuffer<Rgb<f32>, Vec<f32>> =
-            ImageBuffer::new(width as u32, height as u32);
+                    *pixel =
+                        Luma([((intensity - min_pixel) / rescale_ratio * u16::MAX as f32) as u16]);
+                }
 
-        let rescale_ratio = max_pixel - min_pixel;
+                DynamicImage::ImageLuma16(result_img)
+            }
+            OutputLayer::Rgb => {
+                let mut result_img: ImageBuffer<Rgb<f32>, Vec<f32>> =
+                    ImageBuffer::new(width as u32, height as u32);
 
-        for (x, y, pixel) in result_img.enumerate_pixels_mut() {
-            let red = result.red[(y as usize, x as usize)];
-            let green = result.green[(y as usize, x as usize)];
-            let blue = result.blue[(y as usize, x as usize)];
+                let rescale_ratio = max_pixel - min_pixel;
 
-            let scaled_red = (red - min_pixel) / rescale_ratio;
-            let scaled_green = (green - min_pixel) / rescale_ratio;
-            let scaled_blue = (blue - min_pixel) / rescale_ratio;
+                for (x, y, pixel) in result_img.enumerate_pixels_mut() {
+                    let red = result[(y as usize, x as usize, 0)];
+                    let green = result[(y as usize, x as usize, 1)];
+                    let blue = result[(y as usize, x as usize, 2)];
 
-            *pixel = Rgb([scaled_red, scaled_green, scaled_blue]);
+                    let scaled_red = (red - min_pixel) / rescale_ratio;
+                    let scaled_green = (green - min_pixel) / rescale_ratio;
+                    let scaled_blue = (blue - min_pixel) / rescale_ratio;
+
+                    *pixel = Rgb([scaled_red, scaled_green, scaled_blue]);
+                }
+
+                DynamicImage::ImageRgb32F(result_img)
+            }
         }
-
-        DynamicImage::ImageRgb32F(result_img)
     }
 }
 

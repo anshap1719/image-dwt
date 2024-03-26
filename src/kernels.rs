@@ -1,5 +1,3 @@
-use ndarray::Array2;
-
 pub trait Kernel<const SIZE: usize>
 where
     Self: Copy + Send + Sync,
@@ -22,11 +20,10 @@ where
         y: usize,
         x_distance: isize,
         y_distance: isize,
-        data: &Array2<f32>,
+        (max_y, max_x): (usize, usize),
     ) -> [usize; 2] {
         let kernel_size = self.size() as isize;
         let kernel_padding = kernel_size / 2;
-        let (max_y, max_x) = data.dim();
 
         let mut x = x as isize + x_distance;
         let mut y = y as isize + y_distance;
