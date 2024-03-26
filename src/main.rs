@@ -5,7 +5,7 @@ use image_dwt::recompose::ATrousRecompose;
 use image_dwt::transform::ATrousTransform;
 
 fn main() {
-    let image = image::open("./Dis.jpg").unwrap();
+    let image = image::open("./sample.jpg").unwrap();
     let transform = ATrousTransform::new(&image, 6, B3SplineKernel);
 
     for layer in transform {
@@ -23,5 +23,5 @@ fn main() {
     let recomposed = ATrousRecompose::new(&image::open("./residue.jpg").unwrap())
         .recompose((0..6).map(|layer| image::open(format!("level{layer}.jpg")).unwrap()));
 
-    recomposed.to_rgb8().save("recombined1.jpg").unwrap()
+    recomposed.to_rgb8().save("recombined.jpg").unwrap()
 }

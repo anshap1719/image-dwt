@@ -314,7 +314,6 @@ version = "0.2.1"
 dependencies = [
  "image",
  "ndarray",
- "tiff",
 ]
 
 [[package]]
