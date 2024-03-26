@@ -18,30 +18,18 @@ Wavelet transform and multi-resolution analysis is a very widely used transform 
 ## Usage
 
 ```rust
-fn forward_transform() {
+fn remove_large_scale_structures() {
     let image = image::open("./sample.jpg").unwrap();
-    let transform = ATrousTransform::new(&image, 3, LinearInterpolationKernel);
+    let transform = ATrousTransform::new(&image, 6, B3SplineKernel);
 
-    for layer in transform {
-        let name = match layer.pixel_scale {
-            Some(pixel_scale) => {
-                format!("level{pixel_scale}")
-            }
-            None => "residue".to_string(),
-        };
-
-        let image = DynamicImage::ImageRgb32F(layer.image_buffer);
-        image.to_rgb8().save(format!("{name}.jpg")).unwrap();
-    }
-}
-```
-
-```rust
-fn inverse_transform() {
-    let recomposed = ATrousRecompose::new(
-        &image::open("residue.jpg").unwrap()
-    )
-        .recompose((0..3).map(|layer| image::open(format!("level{layer}.jpg")).unwrap()));
+    let recomposed = transform
+        .into_iter()
+        // Skip pixel scale 0 layer for noise removal
+        .skip(1)
+        // Only take layers where pixel scale is less than 2
+        .filter(|item| item.pixel_scale.is_some_and(|scale| scale < 2))
+        // Recompose processed layers into final image
+        .recompose_into_image(image.width() as usize, image.height() as usize);
 
     recomposed.to_rgb8().save("recombined.jpg").unwrap()
 }
