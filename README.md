@@ -41,4 +41,4 @@ To use this library in your Rust project, add the following to your `Cargo.toml`
 
 ```toml
 [dependencies]
-image_dwt = "0.1.0"
+image_dwt = "0.3.2"
