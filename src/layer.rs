@@ -3,6 +3,7 @@ use ndarray::{Array2, Array3};
 
 use crate::aggregate::Aggregate;
 
+#[derive(Clone)]
 pub enum WaveletLayerBuffer {
     Grayscale { data: Array2<f32> },
     Rgb { data: Array3<f32> },
@@ -24,6 +25,7 @@ impl Aggregate for WaveletLayerBuffer {
     }
 }
 
+#[derive(Clone)]
 pub enum WaveletLayerImageBuffer {
     Grayscale {
         buffer: ImageBuffer<Luma<f32>, Vec<f32>>,
@@ -69,6 +71,7 @@ impl From<WaveletLayerBuffer> for WaveletLayerImageBuffer {
     }
 }
 
+#[derive(Clone)]
 pub struct WaveletLayer {
     pub buffer: WaveletLayerBuffer,
     pub pixel_scale: Option<usize>,
