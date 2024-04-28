@@ -11,7 +11,6 @@ categories = ["multimedia"]
 license = "Apache-2.0"
 readme = "./README.md"
 
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
@@ -21,6 +20,7 @@ path = "src/main.rs"
 [dependencies]
 image = { version = "0.25.0", features = ["tiff"] }
 ndarray = { version = "0.15.6", features = ["rayon"] }
+convolve-image = "0.1.0"
 
 [profile.release]
 lto = true
