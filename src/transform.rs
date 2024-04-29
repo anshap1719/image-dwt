@@ -3,12 +3,13 @@ use ndarray::{Array2, Array3};
 
 use crate::aggregate::Aggregate;
 use crate::decompose::WaveletDecompose;
-use crate::kernels::{B3SplineKernel, Kernel, LinearInterpolationKernel, LowScaleKernel};
+use crate::kernels::Kernel;
 use crate::layer::{WaveletLayer, WaveletLayerBuffer};
 
 #[derive(Copy, Clone)]
 pub struct Scale {
     min: f32,
+    #[allow(unused)]
     max: f32,
     scaling_ratio: f32,
 }
@@ -51,19 +52,15 @@ impl Aggregate for ATrousTransformInput {
 }
 
 #[derive(Clone)]
-pub struct ATrousTransform<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_SIZE> + 'static> {
+pub struct ATrousTransform {
     input: ATrousTransformInput,
     levels: usize,
-    kernel: KernelType,
+    kernel: Kernel,
     current_level: usize,
-    width: usize,
-    height: usize,
 }
 
-impl<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_SIZE>>
-    ATrousTransform<KERNEL_SIZE, KernelType>
-{
-    pub fn new(input: &DynamicImage, levels: usize, kernel: KernelType) -> Self {
+impl ATrousTransform {
+    pub fn new(input: &DynamicImage, levels: usize, kernel: Kernel) -> Self {
         let (width, height) = (input.width() as usize, input.height() as usize);
 
         let input = match &input {
@@ -93,37 +90,26 @@ impl<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_SIZE>>
 
         Self {
             input,
-            width,
-            height,
             levels,
             kernel,
             current_level: 0,
         }
     }
 
-    pub fn linear(
-        input: &DynamicImage,
-        levels: usize,
-    ) -> ATrousTransform<3, LinearInterpolationKernel> {
-        ATrousTransform::<3, LinearInterpolationKernel>::new(
-            input,
-            levels,
-            LinearInterpolationKernel,
-        )
+    pub fn linear(input: &DynamicImage, levels: usize) -> Self {
+        ATrousTransform::new(input, levels, Kernel::LinearInterpolationKernel)
     }
 
-    pub fn low_scale(input: &DynamicImage, levels: usize) -> ATrousTransform<3, LowScaleKernel> {
-        ATrousTransform::<3, LowScaleKernel>::new(input, levels, LowScaleKernel)
+    pub fn low_scale(input: &DynamicImage, levels: usize) -> Self {
+        ATrousTransform::new(input, levels, Kernel::LowScaleKernel)
     }
 
-    pub fn b_spline(input: &DynamicImage, levels: usize) -> ATrousTransform<5, B3SplineKernel> {
-        ATrousTransform::<5, B3SplineKernel>::new(input, levels, B3SplineKernel)
+    pub fn b_spline(input: &DynamicImage, levels: usize) -> Self {
+        ATrousTransform::new(input, levels, Kernel::B3SplineKernel)
     }
 }
 
-impl<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_SIZE>> Iterator
-    for ATrousTransform<KERNEL_SIZE, KernelType>
-{
+impl Iterator for ATrousTransform {
     type Item = WaveletLayer;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -143,10 +129,9 @@ impl<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_SIZE>> Iterator
                     });
                 }
 
-                let (width, height) = (self.width, self.height);
                 let kernel = self.kernel;
 
-                let layer_buffer = data.wavelet_decompose(kernel, pixel_scale, width, height);
+                let layer_buffer = data.wavelet_decompose(kernel, pixel_scale);
                 Some(WaveletLayer {
                     pixel_scale: Some(pixel_scale),
                     buffer: layer_buffer,
@@ -160,10 +145,9 @@ impl<const KERNEL_SIZE: usize, KernelType: Kernel<KERNEL_SIZE>> Iterator
                     });
                 }
 
-                let (width, height) = (self.width, self.height);
                 let kernel = self.kernel;
 
-                let layer_buffer = data.wavelet_decompose(kernel, pixel_scale, width, height);
+                let layer_buffer = data.wavelet_decompose(kernel, pixel_scale);
                 Some(WaveletLayer {
                     pixel_scale: Some(pixel_scale),
                     buffer: layer_buffer,

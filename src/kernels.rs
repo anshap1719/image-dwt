@@ -1,100 +1,64 @@
-pub trait Kernel<const SIZE: usize>
-where
-    Self: Copy + Send + Sync,
-{
-    fn values(&self) -> [[f32; SIZE]; SIZE];
+use convolve_image::kernel::{NonSeparableKernel, SeparableKernel};
 
-    fn size(&self) -> usize;
+#[derive(Copy, Clone)]
+pub(crate) struct LinearInterpolationKernel(SeparableKernel<3>);
 
-    fn index(&self, index: [usize; 2]) -> f32 {
-        if index[0] > self.size() || index[1] > self.size() {
-            panic!("Index out of bounds");
-        }
-
-        self.values()[index[0]][index[1]]
-    }
-
-    fn compute_extended_index(
-        &self,
-        x: usize,
-        y: usize,
-        x_distance: isize,
-        y_distance: isize,
-        (max_y, max_x): (usize, usize),
-    ) -> [usize; 2] {
-        let kernel_size = self.size() as isize;
-        let kernel_padding = kernel_size / 2;
-
-        let mut x = x as isize + x_distance;
-        let mut y = y as isize + y_distance;
-
-        if x < 0 {
-            x = -x;
-        } else if x > max_x as isize - kernel_padding {
-            let overshot_distance = x - max_x as isize + kernel_padding;
-            x = max_x as isize - overshot_distance;
-        }
-
-        if y < 0 {
-            y = -y;
-        } else if y > max_y as isize - kernel_padding {
-            let overshot_distance = y - max_y as isize + kernel_padding;
-            y = max_y as isize - overshot_distance;
-        }
-
-        [y as usize, x as usize]
+impl LinearInterpolationKernel {
+    pub(crate) fn new() -> Self {
+        Self(SeparableKernel::new([1. / 4., 1. / 2., 1. / 4.]))
     }
 }
 
 #[derive(Copy, Clone)]
-pub struct LinearInterpolationKernel;
+pub(crate) struct LowScaleKernel(NonSeparableKernel<3>);
 
-impl Kernel<3> for LinearInterpolationKernel {
-    fn values(&self) -> [[f32; 3]; 3] {
-        [
-            [1. / 16., 1. / 8., 1. / 16.],
-            [1. / 8., 1. / 4., 1. / 8.],
-            [1. / 16., 1. / 8., 1. / 16.],
-        ]
-    }
-
-    fn size(&self) -> usize {
-        3
-    }
-}
-
-#[derive(Copy, Clone)]
-pub struct LowScaleKernel;
-
-impl Kernel<3> for LowScaleKernel {
-    fn values(&self) -> [[f32; 3]; 3] {
-        [
+impl LowScaleKernel {
+    #[allow(unused)]
+    pub(crate) fn new() -> Self {
+        Self(NonSeparableKernel::new([
             [1. / 16., 1. / 8., 1. / 16.],
             [1. / 8., 10., 1. / 8.],
             [1. / 16., 1. / 8., 1. / 16.],
-        ]
-    }
-
-    fn size(&self) -> usize {
-        3
+        ]))
     }
 }
 
 #[derive(Copy, Clone)]
-pub struct B3SplineKernel;
+pub(crate) struct B3SplineKernel(SeparableKernel<5>);
 
-impl Kernel<5> for B3SplineKernel {
-    fn values(&self) -> [[f32; 5]; 5] {
-        [
-            [1. / 256., 1. / 64., 3. / 128., 1. / 64., 1. / 256.],
-            [1. / 64., 1. / 16., 3. / 32., 1. / 16., 1. / 64.],
-            [3. / 128., 3. / 32., 9. / 64., 3. / 32., 3. / 128.],
-            [1. / 64., 1. / 16., 3. / 32., 1. / 16., 1. / 64.],
-            [1. / 256., 1. / 64., 3. / 128., 1. / 64., 1. / 256.],
-        ]
+impl B3SplineKernel {
+    pub(crate) fn new() -> Self {
+        Self(SeparableKernel::new([
+            1. / 16.,
+            1. / 4.,
+            3. / 8.,
+            1. / 4.,
+            1. / 16.,
+        ]))
     }
+}
 
-    fn size(&self) -> usize {
-        5
+impl From<LinearInterpolationKernel> for SeparableKernel<3> {
+    fn from(value: LinearInterpolationKernel) -> Self {
+        value.0
     }
+}
+
+impl From<LowScaleKernel> for NonSeparableKernel<3> {
+    fn from(value: LowScaleKernel) -> Self {
+        value.0
+    }
+}
+
+impl From<B3SplineKernel> for SeparableKernel<5> {
+    fn from(value: B3SplineKernel) -> Self {
+        value.0
+    }
+}
+
+#[derive(Copy, Clone)]
+pub enum Kernel {
+    LinearInterpolationKernel,
+    LowScaleKernel,
+    B3SplineKernel,
 }

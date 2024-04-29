@@ -148,11 +148,11 @@ checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
 
 [[package]]
 name = "convolve-image"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "356257d11446413cda23a34ccc4cf6c88e26b89ce5c15929ecb15317f270194b"
+checksum = "f4a6d4c4718b97e8b232c03ae579f86541cfee3f0ddea2d258942c0d6cebda72"
 dependencies = [
- "image",
+ "ndarray",
 ]
 
 [[package]]

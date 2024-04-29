@@ -1,10 +1,10 @@
-use image_dwt::kernels::B3SplineKernel;
 use image_dwt::recompose::{OutputLayer, RecomposableWaveletLayers};
 use image_dwt::transform::ATrousTransform;
+use image_dwt::Kernel;
 
 fn main() {
     let image = image::open("./sample.jpg").unwrap();
-    let transform = ATrousTransform::new(&image, 6, B3SplineKernel);
+    let transform = ATrousTransform::new(&image, 6, Kernel::B3SplineKernel);
 
     let recomposed = transform
         .into_iter()
