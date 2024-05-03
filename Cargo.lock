@@ -320,7 +320,7 @@ dependencies = [
 
 [[package]]
 name = "image-dwt"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "convolve-image",
  "image",
