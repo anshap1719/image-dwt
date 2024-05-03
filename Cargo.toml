@@ -20,7 +20,7 @@ path = "src/main.rs"
 [dependencies]
 image = { version = "0.25.0", features = ["tiff"] }
 ndarray = { version = "0.15.6", features = ["rayon"] }
-convolve-image = { version = "0.2.0", features = ["ndarray"] }
+convolve-image = { version = "0.4.0", features = ["ndarray", "image"] }
 
 [profile.release]
 lto = true
