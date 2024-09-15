@@ -41,8 +41,12 @@ impl From<WaveletLayerBuffer> for WaveletLayerImageBuffer {
             WaveletLayerBuffer::Grayscale { data } => {
                 let (height, width) = data.dim();
 
-                let mut buffer: ImageBuffer<Luma<f32>, Vec<f32>> =
-                    ImageBuffer::new(width as u32, height as u32);
+                let mut buffer: ImageBuffer<Luma<f32>, Vec<f32>> = ImageBuffer::new(
+                    u32::try_from(width)
+                        .unwrap_or_else(|_| panic!("width cannot be larger than {}", u32::MAX)),
+                    u32::try_from(height)
+                        .unwrap_or_else(|_| panic!("height cannot be larger than {}", u32::MAX)),
+                );
 
                 for (x, y, pixel) in buffer.enumerate_pixels_mut() {
                     let intensity = data[(y as usize, x as usize)];
@@ -54,8 +58,12 @@ impl From<WaveletLayerBuffer> for WaveletLayerImageBuffer {
             WaveletLayerBuffer::Rgb { data } => {
                 let (height, width, _) = data.dim();
 
-                let mut buffer: ImageBuffer<Rgb<f32>, Vec<f32>> =
-                    ImageBuffer::new(width as u32, height as u32);
+                let mut buffer: ImageBuffer<Rgb<f32>, Vec<f32>> = ImageBuffer::new(
+                    u32::try_from(width)
+                        .unwrap_or_else(|_| panic!("width cannot be larger than {}", u32::MAX)),
+                    u32::try_from(height)
+                        .unwrap_or_else(|_| panic!("width cannot be larger than {}", u32::MAX)),
+                );
 
                 for (x, y, pixel) in buffer.enumerate_pixels_mut() {
                     let red = data[(y as usize, x as usize, 0)];
@@ -78,6 +86,7 @@ pub struct WaveletLayer {
 }
 
 impl WaveletLayer {
+    #[must_use]
     pub fn is_residue_layer(&self) -> bool {
         self.pixel_scale.is_none()
     }

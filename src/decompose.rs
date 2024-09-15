@@ -10,7 +10,10 @@ pub trait WaveletDecompose {
 
 impl WaveletDecompose for Array2<f32> {
     fn wavelet_decompose(&mut self, kernel: Kernel, pixel_scale: usize) -> WaveletLayerBuffer {
-        let stride = 2_usize.pow(pixel_scale as u32);
+        let stride = 2_usize.pow(
+            u32::try_from(pixel_scale)
+                .unwrap_or_else(|_| panic!("pixel_scale cannot be larger than {}", u32::MAX)),
+        );
         let mut current_data = self.clone();
         match kernel {
             Kernel::LinearInterpolationKernel => {
@@ -31,7 +34,10 @@ impl WaveletDecompose for Array2<f32> {
 
 impl WaveletDecompose for Array3<f32> {
     fn wavelet_decompose(&mut self, kernel: Kernel, pixel_scale: usize) -> WaveletLayerBuffer {
-        let stride = 2_usize.pow(pixel_scale as u32);
+        let stride = 2_usize.pow(
+            u32::try_from(pixel_scale)
+                .unwrap_or_else(|_| panic!("pixel_scale cannot be larger than {}", u32::MAX)),
+        );
         let mut current_data = self.clone();
         match kernel {
             Kernel::LinearInterpolationKernel => {

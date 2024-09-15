@@ -7,8 +7,7 @@ pub trait Aggregate {
 
 impl Aggregate for Array2<f32> {
     fn min(&self) -> f32 {
-        *self
-            .iter()
+        self.iter()
             .reduce(|current, previous| {
                 if current < previous {
                     current
@@ -16,12 +15,12 @@ impl Aggregate for Array2<f32> {
                     previous
                 }
             })
-            .unwrap()
+            .copied()
+            .unwrap_or(0.)
     }
 
     fn max(&self) -> f32 {
-        *self
-            .iter()
+        self.iter()
             .reduce(|current, previous| {
                 if current > previous {
                     current
@@ -29,14 +28,14 @@ impl Aggregate for Array2<f32> {
                     previous
                 }
             })
-            .unwrap()
+            .copied()
+            .unwrap_or(1.)
     }
 }
 
 impl Aggregate for Array3<f32> {
     fn min(&self) -> f32 {
-        *self
-            .iter()
+        self.iter()
             .reduce(|current, previous| {
                 if current < previous {
                     current
@@ -44,12 +43,12 @@ impl Aggregate for Array3<f32> {
                     previous
                 }
             })
-            .unwrap()
+            .copied()
+            .unwrap_or(0.)
     }
 
     fn max(&self) -> f32 {
-        *self
-            .iter()
+        self.iter()
             .reduce(|current, previous| {
                 if current > previous {
                     current
@@ -57,6 +56,7 @@ impl Aggregate for Array3<f32> {
                     previous
                 }
             })
-            .unwrap()
+            .copied()
+            .unwrap_or(1.)
     }
 }

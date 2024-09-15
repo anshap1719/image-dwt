@@ -15,6 +15,7 @@ pub struct Scale {
 }
 
 impl Scale {
+    #[must_use]
     pub fn new(min: f32, max: f32) -> Self {
         Self {
             min,
@@ -24,6 +25,7 @@ impl Scale {
     }
 
     #[inline]
+    #[must_use]
     pub fn apply(&self, value: f32) -> f32 {
         (value - self.min) / self.scaling_ratio
     }
@@ -60,6 +62,7 @@ pub struct ATrousTransform {
 }
 
 impl ATrousTransform {
+    #[must_use]
     pub fn new(input: &DynamicImage, levels: usize, kernel: Kernel) -> Self {
         let (width, height) = (input.width() as usize, input.height() as usize);
 
@@ -96,14 +99,17 @@ impl ATrousTransform {
         }
     }
 
+    #[must_use]
     pub fn linear(input: &DynamicImage, levels: usize) -> Self {
         ATrousTransform::new(input, levels, Kernel::LinearInterpolationKernel)
     }
 
+    #[must_use]
     pub fn low_scale(input: &DynamicImage, levels: usize) -> Self {
         ATrousTransform::new(input, levels, Kernel::LowScaleKernel)
     }
 
+    #[must_use]
     pub fn b_spline(input: &DynamicImage, levels: usize) -> Self {
         ATrousTransform::new(input, levels, Kernel::B3SplineKernel)
     }

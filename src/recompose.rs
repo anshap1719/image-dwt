@@ -20,6 +20,11 @@ impl OutputLayer {
 }
 
 pub trait RecomposableWaveletLayers: Iterator<Item = WaveletLayer> {
+    #[allow(
+        clippy::cast_sign_loss,
+        clippy::cast_possible_truncation,
+        clippy::cast_lossless
+    )]
     fn recompose_into_image(
         self,
         width: usize,
@@ -38,15 +43,21 @@ pub trait RecomposableWaveletLayers: Iterator<Item = WaveletLayer> {
                         WaveletLayerBuffer::Grayscale { data } => {
                             result += &data;
                         }
-                        _ => unimplemented!(),
+                        WaveletLayerBuffer::Rgb { .. } => {
+                            panic!("Cannot create Grayscale output from RGB input")
+                        }
                     }
                 }
 
                 let min_pixel = result.min();
                 let max_pixel = result.max();
 
-                let mut result_img: ImageBuffer<Luma<u16>, Vec<u16>> =
-                    ImageBuffer::new(width as u32, height as u32);
+                let mut result_img: ImageBuffer<Luma<u16>, Vec<u16>> = ImageBuffer::new(
+                    u32::try_from(width)
+                        .unwrap_or_else(|_| panic!("width cannot be larger than {}", u32::MAX)),
+                    u32::try_from(height)
+                        .unwrap_or_else(|_| panic!("height cannot be larger than {}", u32::MAX)),
+                );
 
                 let rescale_ratio = max_pixel - min_pixel;
 
@@ -68,7 +79,9 @@ pub trait RecomposableWaveletLayers: Iterator<Item = WaveletLayer> {
                         WaveletLayerBuffer::Rgb { data } => {
                             result += &data;
                         }
-                        _ => unimplemented!(),
+                        WaveletLayerBuffer::Grayscale { .. } => {
+                            panic!("Cannot create RGB output from Grayscale input")
+                        }
                     }
                 }
 

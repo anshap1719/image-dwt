@@ -27,3 +27,20 @@ lto = true
 codegen-units = 1
 panic = "abort"
 opt-level = 3
+
+[lints.clippy]
+# Clippy lint groups
+correctness = { level = "deny", priority = 0 }
+suspicious = { level = "deny", priority = 0 }
+complexity = { level = "deny", priority = 0 }
+perf = { level = "deny", priority = 0 }
+style = { level = "deny", priority = 0 }
+pedantic = { level = "deny", priority = 0 }
+cargo = { level = "deny", priority = 0 }
+
+# Overrides
+too_many_lines = { level = "deny", priority = 1 }
+unwrap_used = { level = "deny", priority = 1 }
+get_unwrap = { level = "deny", priority = 1 }
+fallible_impl_from = { level = "deny", priority = 1 }
+module_name_repetitions = { level = "allow", priority = 1 }
