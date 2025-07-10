@@ -46,6 +46,9 @@ pub trait RecomposableWaveletLayers: Iterator<Item = WaveletLayer> {
                         WaveletLayerBuffer::Rgb { .. } => {
                             panic!("Cannot create Grayscale output from RGB input")
                         }
+                        WaveletLayerBuffer::Raw { .. } => {
+                            panic!("Cannot create Grayscale output from Raw input")
+                        }
                     }
                 }
 
@@ -79,6 +82,9 @@ pub trait RecomposableWaveletLayers: Iterator<Item = WaveletLayer> {
                         WaveletLayerBuffer::Rgb { data } => {
                             result += &data;
                         }
+                        WaveletLayerBuffer::Raw { .. } => {
+                            panic!("Cannot create RGB output from RAW input")
+                        }
                         WaveletLayerBuffer::Grayscale { .. } => {
                             panic!("Cannot create RGB output from Grayscale input")
                         }
@@ -108,6 +114,28 @@ pub trait RecomposableWaveletLayers: Iterator<Item = WaveletLayer> {
                 DynamicImage::ImageRgb32F(result_img)
             }
         }
+    }
+    fn recompose_into_raw(self, width: usize, height: usize) -> Array3<f32>
+    where
+        Self: Sized,
+    {
+        let mut result = Array3::<f32>::zeros((height, width, 3));
+
+        for layer in self {
+            match layer.buffer {
+                WaveletLayerBuffer::Raw { data } => {
+                    result += &data;
+                }
+                WaveletLayerBuffer::Rgb { .. } => {
+                    panic!("Cannot create RGB output from RAW input")
+                }
+                WaveletLayerBuffer::Grayscale { .. } => {
+                    panic!("Cannot create RGB output from Grayscale input")
+                }
+            }
+        }
+
+        result
     }
 }
 

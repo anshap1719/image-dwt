@@ -7,6 +7,7 @@ use crate::aggregate::Aggregate;
 pub enum WaveletLayerBuffer {
     Grayscale { data: Array2<f32> },
     Rgb { data: Array3<f32> },
+    Raw { data: Array3<f32> },
 }
 
 impl Aggregate for WaveletLayerBuffer {
@@ -14,6 +15,7 @@ impl Aggregate for WaveletLayerBuffer {
         match self {
             WaveletLayerBuffer::Grayscale { data } => data.min(),
             WaveletLayerBuffer::Rgb { data } => data.min(),
+            WaveletLayerBuffer::Raw { data } => data.min(),
         }
     }
 
@@ -21,6 +23,7 @@ impl Aggregate for WaveletLayerBuffer {
         match self {
             WaveletLayerBuffer::Grayscale { data } => data.max(),
             WaveletLayerBuffer::Rgb { data } => data.max(),
+            WaveletLayerBuffer::Raw { data } => data.max(),
         }
     }
 }
@@ -75,6 +78,7 @@ impl From<WaveletLayerBuffer> for WaveletLayerImageBuffer {
 
                 WaveletLayerImageBuffer::Rgb { buffer }
             }
+            WaveletLayerBuffer::Raw { .. } => unimplemented!(),
         }
     }
 }

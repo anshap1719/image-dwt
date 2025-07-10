@@ -33,22 +33,30 @@ impl Scale {
 
 #[derive(Clone)]
 enum ATrousTransformInput {
-    Grayscale { data: Array2<f32> },
-    Rgb { data: Array3<f32> },
+    Grayscale {
+        data: Array2<f32>,
+    },
+    Rgb {
+        data: Array3<f32>,
+    },
+    /// For arbitrary color spaces
+    Raw {
+        data: Array3<f32>,
+    },
 }
 
 impl Aggregate for ATrousTransformInput {
     fn min(&self) -> f32 {
         match self {
             ATrousTransformInput::Grayscale { data } => data.min(),
-            ATrousTransformInput::Rgb { data } => data.min(),
+            ATrousTransformInput::Rgb { data } | ATrousTransformInput::Raw { data } => data.min(),
         }
     }
 
     fn max(&self) -> f32 {
         match self {
             ATrousTransformInput::Grayscale { data } => data.max(),
-            ATrousTransformInput::Rgb { data } => data.max(),
+            ATrousTransformInput::Rgb { data } | ATrousTransformInput::Raw { data } => data.max(),
         }
     }
 }
@@ -100,6 +108,18 @@ impl ATrousTransform {
     }
 
     #[must_use]
+    pub fn from_raw_buffer(data: Array3<f32>, levels: usize, kernel: Kernel) -> Self {
+        let input = ATrousTransformInput::Raw { data };
+
+        Self {
+            input,
+            levels,
+            kernel,
+            current_level: 0,
+        }
+    }
+
+    #[must_use]
     pub fn linear(input: &DynamicImage, levels: usize) -> Self {
         ATrousTransform::new(input, levels, Kernel::LinearInterpolationKernel)
     }
@@ -137,7 +157,7 @@ impl Iterator for ATrousTransform {
 
                 let kernel = self.kernel;
 
-                let layer_buffer = data.wavelet_decompose(kernel, pixel_scale);
+                let layer_buffer = data.wavelet_decompose(kernel, pixel_scale, false);
                 Some(WaveletLayer {
                     pixel_scale: Some(pixel_scale),
                     buffer: layer_buffer,
@@ -153,7 +173,23 @@ impl Iterator for ATrousTransform {
 
                 let kernel = self.kernel;
 
-                let layer_buffer = data.wavelet_decompose(kernel, pixel_scale);
+                let layer_buffer = data.wavelet_decompose(kernel, pixel_scale, false);
+                Some(WaveletLayer {
+                    pixel_scale: Some(pixel_scale),
+                    buffer: layer_buffer,
+                })
+            }
+            ATrousTransformInput::Raw { data } => {
+                if pixel_scale == self.levels {
+                    return Some(WaveletLayer {
+                        buffer: WaveletLayerBuffer::Raw { data: data.clone() },
+                        pixel_scale: None,
+                    });
+                }
+
+                let kernel = self.kernel;
+
+                let layer_buffer = data.wavelet_decompose(kernel, pixel_scale, true);
                 Some(WaveletLayer {
                     pixel_scale: Some(pixel_scale),
                     buffer: layer_buffer,
